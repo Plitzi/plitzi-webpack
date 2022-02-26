@@ -1,0 +1,113 @@
+// Packages
+const webpack = require('webpack');
+const { RawSource } = require('webpack-sources');
+
+const { Module, RuntimeGlobals } = webpack;
+
+const RUNTIME_REQUIREMENTS_FOR_SCRIPT = new Set([RuntimeGlobals.loadScript]);
+const EMPTY_RUNTIME_REQUIREMENTS = new Set([]);
+
+// function extractUrlAndGlobal(urlAndGlobal) {
+//   const index = urlAndGlobal.indexOf('@');
+//   if (index <= 0 || index === urlAndGlobal.length - 1) {
+//     throw new Error(`Invalid request "${urlAndGlobal}"`);
+//   }
+//   return [urlAndGlobal.substring(index + 1), urlAndGlobal.substring(0, index)];
+// }
+
+class PlitziPluginModule extends Module {
+  constructor(request, type, userRequest) {
+    super('plitzi-plugin-module', null);
+
+    /** @type {string | string[] | Record<string, string | string[]>} */
+    this.request = request;
+    /** @type {string} */
+    this.externalType = type;
+    /** @type {string} */
+    this.userRequest = userRequest;
+  }
+
+  /**
+   * @returns {string} a unique identifier of the module
+   */
+  identifier() {
+    return `external ${this.externalType} ${JSON.stringify(this.request)}`;
+  }
+
+  /**
+   * @param {string=} type the source type for which the size should be estimated
+   * @returns {number} the estimated size of the module (must be non-zero)
+   */
+  size(/* type */) {
+    return 42;
+  }
+
+  /**
+   * @param {RequestShortener} requestShortener the request shortener
+   * @returns {string} a user readable identifier of the module
+   */
+  readableIdentifier(/* requestShortener */) {
+    return `external ${JSON.stringify(this.request)}`;
+  }
+
+  // eslint-disable-next-line
+  _getSourceForScriptExternal(runtimeTemplate) {
+    const globalName = 'plitziSdkFederation';
+
+    return {
+      init: 'var __webpack_error__ = new Error();',
+      expression: `new Promise(${runtimeTemplate.basicFunction('resolve, reject', [
+        `if(!${RuntimeGlobals.shareScopeMap} || !${RuntimeGlobals.hasOwnProperty}(${RuntimeGlobals.shareScopeMap}, 'default')) {
+            console.error('Host reference ${globalName} was not loaded');
+            reject(__webpack_error__);						
+          };
+          resolve();`
+      ])}).then(${runtimeTemplate.returningFunction(
+        `{get: ${runtimeTemplate.basicFunction('module, getScope', [
+          `var [[scope]] = getScope;
+          const m = '${globalName}' + module.replace('.', '');
+          if(!${RuntimeGlobals.shareScopeMap}[scope][m]) throw new Error("Module not found in the host");			
+          return ${RuntimeGlobals.shareScopeMap}[scope][m][0].get();`
+        ])}}`
+      )})`,
+      runtimeRequirements: RUNTIME_REQUIREMENTS_FOR_SCRIPT
+    };
+  }
+
+  /**
+   * @param {CodeGenerationContext} context context for code generation
+   * @returns {CodeGenerationResult} result
+   */
+  codeGeneration({ runtimeTemplate }) {
+    const sourceData = this._getSourceForScriptExternal(runtimeTemplate);
+    const sources = new Map();
+    let sourceString = sourceData.expression;
+    sourceString = `module.exports = ${sourceString};`;
+    if (sourceData.init) {
+      sourceString = `${sourceData.init}\n${sourceString}`;
+    }
+
+    sources.set('javascript', new RawSource(sourceString));
+
+    let { runtimeRequirements } = sourceData;
+    const set = new Set(runtimeRequirements);
+    set.add(RuntimeGlobals.module);
+    runtimeRequirements = set;
+
+    return {
+      sources,
+      runtimeRequirements: runtimeRequirements || EMPTY_RUNTIME_REQUIREMENTS,
+      data: undefined
+    };
+  }
+
+  build(options, compilation, resolver, fs, callback) {
+    this.buildMeta = { async: true, exportsType: undefined };
+    this.buildInfo = { strict: true, topLevelDeclarations: new Set(), module: compilation.outputOptions.module };
+    console.log(webpack);
+    // this.addDependency(new webpack.StaticExportsDependency(true, false));
+    callback();
+  }
+}
+
+module.exports = PlitziPluginModule;

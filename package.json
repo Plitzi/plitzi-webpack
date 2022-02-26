@@ -1,0 +1,33 @@
+{
+  "name": "@plitzi/plitzi-plugins-webpack",
+  "version": "0.1.0",
+  "license": "apache-2.0",
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "https",
+    "url": "https://github.com/plitzi/plitzi-plugins-webpack.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/plitzi"
+  },
+  "main": "src/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.16.5",
+    "@babel/eslint-parser": "^7.16.5",
+    "eslint": "^8.5.0",
+    "eslint-config-airbnb": "^19.0.2",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-flowtype": "8.0.3",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "flow-bin": "^0.116.1",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
+  },
+  "scripts": {
+    "lint": "eslint ./src"
+  }
+}
