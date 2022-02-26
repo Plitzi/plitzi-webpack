@@ -66,9 +66,6 @@ jobs:
       - name: Yarn Lint
         run: yarn lint
 
-      - name: Yarn Scss Lint
-        run: yarn lint-style
-
   # tests:
   #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/master')
   #   needs: lint
