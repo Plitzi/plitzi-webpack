@@ -4,9 +4,8 @@ const webpack = require('webpack');
 const { RuntimeModule, Template, RuntimeGlobals } = webpack;
 
 class PlitziPluginRuntime extends RuntimeModule {
-  constructor(runtimeRequirements, remotes) {
+  constructor(remotes) {
     super('plitzi-plugin-runtime', RuntimeModule.STAGE_ATTACH);
-    this._runtimeRequirements = runtimeRequirements;
     this._remotes = remotes;
   }
 

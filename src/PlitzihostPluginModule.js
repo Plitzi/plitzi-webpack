@@ -3,9 +3,9 @@ const webpack = require('webpack');
 
 const { Module } = webpack;
 
-class PlitziPluginHostModule extends Module {
+class PlitzihostPluginModule extends Module {
   constructor(request, externalRequests, internalRequest, shareScope) {
-    super('plitzi-plugin-host-module', null);
+    super('plitzi-host-plugin-module', null);
 
     this.request = request;
     this.externalRequests = externalRequests;
@@ -55,4 +55,4 @@ class PlitziPluginHostModule extends Module {
   }
 }
 
-module.exports = PlitziPluginHostModule;
+module.exports = PlitzihostPluginModule;
