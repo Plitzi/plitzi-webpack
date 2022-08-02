@@ -11,6 +11,7 @@ class PlitziHostPluginModule extends Module {
     this.externalRequests = externalRequests;
     this.internalRequest = internalRequest;
     this.shareScope = shareScope;
+    this.externalType = 'module';
     this._identifier = `remote (${shareScope}) ${this.externalRequests.join(' ')} ${this.internalRequest}`;
   }
 

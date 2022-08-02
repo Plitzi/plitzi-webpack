@@ -7,6 +7,7 @@ const PlitziPluginRuntime = require('./PlitziPluginRuntime');
 const PlitziHostPluginModule = require('./PlitziHostPluginModule');
 const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
+const { getUsedModuleIdsAndModules } = require('./helpers/utils');
 
 const slashCode = '/'.charCodeAt(0);
 
@@ -79,6 +80,18 @@ class PlitziPlugin {
           }
 
           return undefined;
+        });
+
+        compilation.hooks.moduleIds.tap('ContainerReferencePlugin', () => {
+          const chunkGraph = compilation.chunkGraph;
+          const [, /* usedIds */ modules] = getUsedModuleIdsAndModules(compilation);
+          modules.forEach(module => {
+            // console.log(module.identifier(), module.request);
+            const identifier = module.identifier();
+            if (identifier && identifier.includes(hostName)) {
+              chunkGraph.setModuleId(module, module.libIdent());
+            }
+          });
         });
       });
     }
