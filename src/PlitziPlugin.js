@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // Relatives
 const PlitziPluginRuntime = require('./PlitziPluginRuntime');
-const PlitzihostPluginModule = require('./PlitzihostPluginModule');
+const PlitziHostPluginModule = require('./PlitziHostPluginModule');
 const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
 
@@ -74,7 +74,7 @@ class PlitziPlugin {
               request.startsWith(hostName) &&
               (request.length === hostName.length || request.charCodeAt(hostName.length) === slashCode)
             ) {
-              return new PlitzihostPluginModule(request, [], `.${request.slice(hostName.length)}`, 'default');
+              return new PlitziHostPluginModule(request, [], `.${request.slice(hostName.length)}`, 'default');
             }
           }
 
