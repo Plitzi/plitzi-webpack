@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
           registry-url: https://npm.pkg.github.com
           scope: '@plitzi'
 
@@ -52,7 +52,7 @@ jobs:
 
       - uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
           registry-url: https://npm.pkg.github.com/plitzi
 
       - name: Restore Cache
@@ -75,7 +75,7 @@ jobs:
 
   #     - uses: actions/setup-node@v1
   #       with:
-  #         node-version: 16
+  #         node-version: 18
   #         registry-url: https://npm.pkg.github.com/plitzi
 
   #     - name: Restore Cache
@@ -98,7 +98,7 @@ jobs:
 
       - uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
           registry-url: https://npm.pkg.github.com/plitzi
 
       - name: Restore Cache
