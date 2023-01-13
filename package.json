@@ -21,7 +21,7 @@
     "eslint-config-airbnb": "^19.0.2",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-flowtype": "8.0.3",
-    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-import": "^2.27.4",
     "eslint-plugin-jsx-a11y": "^6.6.1",
     "flow-bin": "^0.192.0",
     "webpack": "^5.75.0",
