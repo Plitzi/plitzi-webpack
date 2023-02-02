@@ -1171,10 +1171,10 @@ flatted@^3.1.0:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.7.tgz#609f39207cb614b89d0765b477cb2d437fbf9787"
   integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
-flow-bin@^0.192.0:
-  version "0.192.0"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.192.0.tgz#a1d75fb955b3980b23cff43577044c52f5d95d33"
-  integrity sha512-RlHhXn9m1IRTB5yKhnLGgLWq9z4qJ76slum/DXvmTlrAUPaVcmU/IsTHiY4JpjqK7nFz4oyrnU/YES8xDVBoZg==
+flow-bin@^0.199.0:
+  version "0.199.0"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.199.0.tgz#e710c0834d4e1032529a633e0cf32d89a102fcfb"
+  integrity sha512-8N8jn59ghgtDSogFoy1Ld1P8NlfdlVUcXSRADDf8WyX3SMMA6b1SbqraTRXxJDNn0F3WdVBHKdufdUg73y4Nhw==
 
 fs.realpath@^1.0.0:
   version "1.0.0"
