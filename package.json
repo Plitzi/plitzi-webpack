@@ -15,7 +15,7 @@
   "main": "src/index.js",
   "dependencies": {},
   "devDependencies": {
-    "@babel/core": "^7.20.2",
+    "@babel/core": "^7.21.0",
     "@babel/eslint-parser": "^7.19.1",
     "eslint": "^8.27.0",
     "eslint-config-airbnb": "^19.0.2",
