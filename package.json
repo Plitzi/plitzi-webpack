@@ -23,7 +23,7 @@
     "eslint-plugin-flowtype": "8.0.3",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jsx-a11y": "^6.6.1",
-    "flow-bin": "^0.192.0",
+    "flow-bin": "^0.201.0",
     "webpack": "^5.75.0",
     "webpack-cli": "^4.10.0"
   },
