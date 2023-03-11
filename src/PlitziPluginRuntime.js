@@ -17,7 +17,7 @@ class PlitziPluginRuntime extends RuntimeModule {
     const { runtimeTemplate } = compilation;
 
     return Template.asString([
-      `if (!${RuntimeGlobals.hasOwnProperty}(this, 'document') || !this.document.currentScript) return;
+      `if (!this || !${RuntimeGlobals.hasOwnProperty}(this, 'document') || !this.document.currentScript) return;
         var { init, shared } = this.document.currentScript;
         if (init) {
           var modules = init();
