@@ -8,6 +8,11 @@ const PlitziHostPluginModule = require('./PlitziHostPluginModule');
 const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
 const { getUsedModuleIdsAndModules } = require('./helpers/utils');
+const PlitziLibraryPlugin = require('./PlitziLibraryPlugin');
+
+const {
+  library: { EnableLibraryPlugin }
+} = webpack;
 
 const slashCode = '/'.charCodeAt(0);
 
@@ -113,6 +118,12 @@ class PlitziPlugin {
         });
       });
     }
+
+    // EnableLibraryPlugin.setEnabled(compiler, 'plitzi');
+    // compiler.hooks.thisCompilation.tap('PlitziPlugin', (compilation, { normalModuleFactory }) => {
+    //   new PlitziLibraryPlugin().apply(compiler);
+    // });
+    new PlitziLibraryPlugin().apply(compiler);
   }
 }
 

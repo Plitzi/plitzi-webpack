@@ -17,15 +17,19 @@ class PlitziPluginRuntime extends RuntimeModule {
     const { runtimeTemplate } = compilation;
 
     return Template.asString([
-      `if (!this || !${RuntimeGlobals.hasOwnProperty}(this, 'document') || !this.document.currentScript) return;
-        var { init, shared } = this.document.currentScript;
+      `
+      try {
+        if (this && ${RuntimeGlobals.hasOwnProperty}(this, 'document') && this.document.currentScript) {
+          ({ init, shared } = this.document.currentScript);
+        };
+        
         if (init) {
           var modules = init();
           Object.keys(modules).forEach(${runtimeTemplate.basicFunction('moduleKey', [
             `${RuntimeGlobals.moduleFactories}[moduleKey] = modules[moduleKey];`
           ])});
         }
-
+  
         if (shared) {
           var sharedModules = shared();
           Object.keys(sharedModules).forEach(${runtimeTemplate.basicFunction('scopeKey', [
@@ -35,7 +39,11 @@ class PlitziPluginRuntime extends RuntimeModule {
                 `${RuntimeGlobals.shareScopeMap}[scopeKey][moduleKey] = sharedModules[scopeKey][moduleKey];`
               ])})`
           ])});
-        }`
+        }
+      } catch (e) {
+        console.log('Error trying to load');
+      }
+      `
     ]);
   }
 }
