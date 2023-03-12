@@ -12,19 +12,15 @@ class PlitziStorybookPluginRuntime extends RuntimeModule {
    * @returns {string} runtime code
    */
   generate() {
-    const { compilation } = this;
-    const { runtimeTemplate } = compilation;
-
     return Template.asString([
       `if (${RuntimeGlobals.moduleFactories}) {
-        const moduleKey = 'webpack/container/remote/plitziSdkFederation/usePlitziServiceContext';
-        ${RuntimeGlobals.moduleFactories}[moduleKey] = ${runtimeTemplate.basicFunction('module', [
-        `const moduleAux = { exports: {} }
-        ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
-        const hostModule = module.id.replace('webpack/container/remote/plitziSdkFederation/', '');
-        if (!moduleAux.exports[hostModule]) return;
-        module.exports = moduleAux.exports[hostModule];`
-      ])}
+        ${RuntimeGlobals.moduleFactories}['webpack/container/remote/plitziSdkFederation/usePlitziServiceContext'] = module => {
+          const moduleAux = { exports: {} }
+          ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
+          const hostModule = module.id.replace('webpack/container/remote/plitziSdkFederation/', '');
+          if (!moduleAux.exports[hostModule]) return;
+          module.exports = moduleAux.exports[hostModule];
+        }
       }`
     ]);
   }

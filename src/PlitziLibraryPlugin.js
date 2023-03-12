@@ -1,7 +1,8 @@
 'use strict';
 
 const webpack = require('webpack');
-const { propertyAccess } = require('./helpers/utils');
+const ExportPropertyLibraryPlugin = require('webpack/lib/library/ExportPropertyLibraryPlugin');
+const propertyAccess = require('webpack/lib/util/propertyAccess');
 
 const {
   Template,
@@ -13,7 +14,7 @@ const {
 class PlitziLibraryPlugin extends AbstractLibraryPlugin {
   constructor(options = {}) {
     const { mode = 'plugin', type = 'plitzi' } = options;
-    super({ pluginName: 'PlitziLibraryPlugin', type });
+    super({ pluginName: 'ModuleLibraryPlugin', type, library: { name: 'test' } });
 
     this.mode = mode;
     this.type = type;
@@ -40,8 +41,13 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
   }
 
   apply(compiler) {
+    // Enable Custom library
     EnableLibraryPlugin.setEnabled(compiler, 'plitzi');
 
+    // Enable Exports
+    new ExportPropertyLibraryPlugin({ type: this.type, nsObjectUsed: this.type !== 'plitzi' }).apply(compiler);
+
+    // Continue with parent apply process
     super.apply(compiler);
   }
 
@@ -49,8 +55,9 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     const { names } = options;
 
     if (this.type === 'plitzi') {
+      const finalName = names.root || names.commonjs || 'plitzi';
       const result = new ConcatSource(
-        `const module = (function plitziUniversalModuleDefinition() {
+        `var ${finalName} = (function plitziUniversalModuleDefinition() {
           let windowInstance = {};
           if (typeof window !== 'undefined') {
             windowInstance = window;
@@ -64,7 +71,11 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
             window.plitziPlugins = {}
           }
 
-          window.plitziPlugins['${names.root || names.commonjs}'] = module;
+          if (!window.plitziPlugins['${names.root || names.commonjs}']) {
+            window.plitziPlugins['${names.root || names.commonjs}'] = ${finalName};
+          } else {
+            // console.log('${names.root || names.commonjs} already loaded');
+          }
         }
         `
       );
@@ -101,15 +112,11 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
   storybookStartupTemplate() {
     return `if (${RuntimeGlobals.moduleFactories}) {
-      const moduleKey = 'webpack/container/remote/plitziSdkFederation/usePlitziServiceContext';
-      ${RuntimeGlobals.moduleFactories}[moduleKey] = module => {
+      ${RuntimeGlobals.moduleFactories}['webpack/container/remote/plitziSdkFederation/usePlitziServiceContext'] = module => {
         const moduleAux = { exports: {} }
         ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
         const hostModule = module.id.replace('webpack/container/remote/plitziSdkFederation/', '');
-        if (!moduleAux.exports[hostModule]) {
-          return;
-        }
-
+        if (!moduleAux.exports[hostModule]) return;
         module.exports = moduleAux.exports[hostModule];
       }
     }`;

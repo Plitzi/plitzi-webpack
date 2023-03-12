@@ -1,6 +1,6 @@
 {
   "name": "@plitzi/plitzi-webpack",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "license": "apache-2.0",
   "files": [
     "src"
