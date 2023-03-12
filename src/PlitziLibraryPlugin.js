@@ -5,13 +5,18 @@ const { propertyAccess } = require('./helpers/utils');
 
 const {
   Template,
+  RuntimeGlobals,
   sources: { ConcatSource },
   library: { AbstractLibraryPlugin, EnableLibraryPlugin }
 } = webpack;
 
 class PlitziLibraryPlugin extends AbstractLibraryPlugin {
-  constructor() {
-    super({ pluginName: 'PlitziLibraryPlugin', type: 'plitzi' });
+  constructor(options = {}) {
+    const { mode = 'plugin', type = 'plitzi' } = options;
+    super({ pluginName: 'PlitziLibraryPlugin', type });
+
+    this.mode = mode;
+    this.type = type;
   }
 
   parseOptions(library) {
@@ -40,44 +45,114 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     super.apply(compiler);
   }
 
-  render(source) {
-    const result = new ConcatSource(
-      `export default (function plitziPluginLoaderDefinition() {\nreturn (init, shared) =>\nnew Promise((resolve, reject) => {\n`,
-      source,
-      '\n});\n})()'
-    );
+  render(source, data, { options }) {
+    const { names } = options;
 
-    return result;
+    if (this.type === 'plitzi') {
+      const result = new ConcatSource(
+        `const module = (function plitziUniversalModuleDefinition() {
+          let windowInstance = {};
+          if (typeof window !== 'undefined') {
+            windowInstance = window;
+          }
+          return (init, shared, { window  = windowInstance, document = windowInstance.document, Navigator = windowInstance.Navigator, navigator = windowInstance.navigator } = {}) => new Promise((resolve, reject) => {\n`,
+        source,
+        `\n});
+        })();
+        if (typeof window !== 'undefined') {
+          if (!window.plitziPlugins) {
+            window.plitziPlugins = {}
+          }
+
+          window.plitziPlugins['${names.root || names.commonjs}'] = module;
+        }
+        `
+      );
+
+      return result;
+    }
+
+    return source;
+  }
+
+  pluginStartupTemplate() {
+    return `try {
+      if (init) {
+        var modules = init();
+        Object.keys(modules).forEach(moduleKey => {
+          ${RuntimeGlobals.moduleFactories}[moduleKey] = modules[moduleKey];
+        });
+      }
+
+      if (shared) {
+        var sharedModules = shared();
+        Object.keys(sharedModules).forEach(scopeKey => {
+          var scopeSection = ${RuntimeGlobals.shareScopeMap}[scopeKey] || {};
+          if (!${RuntimeGlobals.shareScopeMap}[scopeKey]) ${RuntimeGlobals.shareScopeMap}[scopeKey] = scopeSection;
+          Object.keys(sharedModules[scopeKey]).forEach(moduleKey => {
+            ${RuntimeGlobals.shareScopeMap}[scopeKey][moduleKey] = sharedModules[scopeKey][moduleKey];
+          })
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }`;
+  }
+
+  storybookStartupTemplate() {
+    return `if (${RuntimeGlobals.moduleFactories}) {
+      const moduleKey = 'webpack/container/remote/plitziSdkFederation/usePlitziServiceContext';
+      ${RuntimeGlobals.moduleFactories}[moduleKey] = module => {
+        const moduleAux = { exports: {} }
+        ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
+        const hostModule = module.id.replace('webpack/container/remote/plitziSdkFederation/', '');
+        if (!moduleAux.exports[hostModule]) {
+          return;
+        }
+
+        module.exports = moduleAux.exports[hostModule];
+      }
+    }`;
   }
 
   renderStartup(source, module, { moduleGraph, chunk }) {
-    const result = new ConcatSource(source);
-    const exportsInfo = moduleGraph.getExportsInfo(module);
-    const exports = [];
-    const isAsync = moduleGraph.isAsync(module);
-    if (isAsync) {
-      result.add(`__webpack_exports__ = await __webpack_exports__;\n`);
-    }
-
-    for (const exportInfo of exportsInfo.orderedExports) {
-      if (!exportInfo.provided) {
-        continue;
+    if (this.type === 'plitzi') {
+      let result = source;
+      if (this.mode === 'plugin') {
+        result = new ConcatSource(this.pluginStartupTemplate(), source);
+      } else if (this.mode === 'storybook') {
+        result = new ConcatSource(this.storybookStartupTemplate(), source);
       }
 
-      const varName = `__webpack_exports__${Template.toIdentifier(exportInfo.name)}`;
-      result.add(
-        `var ${varName} = __webpack_exports__${propertyAccess([
-          exportInfo.getUsedName(exportInfo.name, chunk.runtime)
-        ])};\n`
-      );
-      exports.push(`${exportInfo.name}: ${varName}`);
+      const exportsInfo = moduleGraph.getExportsInfo(module);
+      const exports = [];
+      const isAsync = moduleGraph.isAsync(module);
+      if (isAsync) {
+        result.add(`__webpack_exports__ = await __webpack_exports__;\n`);
+      }
+
+      for (const exportInfo of exportsInfo.orderedExports) {
+        if (!exportInfo.provided) {
+          continue;
+        }
+
+        const varName = `__webpack_exports__${Template.toIdentifier(exportInfo.name)}`;
+        result.add(
+          `var ${varName} = __webpack_exports__${propertyAccess([
+            exportInfo.getUsedName(exportInfo.name, chunk.runtime)
+          ])};\n`
+        );
+        exports.push(`${exportInfo.name}: ${varName}`);
+      }
+
+      if (exports.length > 0) {
+        result.add(`resolve({ ${exports.join(', ')} });\n`);
+      }
+
+      return result;
     }
 
-    if (exports.length > 0) {
-      result.add(`resolve({ ${exports.join(', ')} });\n`);
-    }
-
-    return result;
+    return source;
   }
 }
 

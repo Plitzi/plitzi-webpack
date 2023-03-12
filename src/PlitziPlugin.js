@@ -3,16 +3,11 @@ const webpack = require('webpack');
 const fs = require('fs');
 
 // Relatives
-const PlitziPluginRuntime = require('./PlitziPluginRuntime');
 const PlitziHostPluginModule = require('./PlitziHostPluginModule');
 const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
 const { getUsedModuleIdsAndModules } = require('./helpers/utils');
 const PlitziLibraryPlugin = require('./PlitziLibraryPlugin');
-
-const {
-  library: { EnableLibraryPlugin }
-} = webpack;
 
 const slashCode = '/'.charCodeAt(0);
 
@@ -22,6 +17,7 @@ class PlitziPlugin {
       isPlugin: false,
       isHost: false,
       isStorybook: false,
+      libraryTarget: 'plitzi',
       shared: {},
       exposes: [],
       shareScope: undefined,
@@ -36,7 +32,7 @@ class PlitziPlugin {
    */
   apply(compiler) {
     const { _options: options } = this;
-    const { hostName, isPlugin, isHost, isStorybook, shared, shareScope, exposes } = options;
+    const { hostName, isPlugin, isHost, isStorybook, shared, shareScope, exposes, libraryTarget } = options;
     compiler.hooks.afterPlugins.tap('PlitziPlugin', () => {
       if (shared && Object.keys(shared).length > 0) {
         new webpack.sharing.SharePlugin({ shared, shareScope }).apply(compiler);
@@ -63,7 +59,7 @@ class PlitziPlugin {
         new webpack.sharing.SharePlugin({ shared: exposeShared, shareScope }).apply(compiler);
       }
 
-      if (hostName && isStorybook) {
+      if (isStorybook) {
         new webpack.sharing.SharePlugin({
           shared: { '@plitzi/plitzi-sdk': { singleton: true, requiredVersion: false, eager: true } },
           shareScope
@@ -101,29 +97,24 @@ class PlitziPlugin {
       });
     }
 
-    if (isPlugin || isHost || (isStorybook && hostName)) {
+    if (isHost || isStorybook) {
       compiler.hooks.thisCompilation.tap('PlitziPlugin', compilation => {
         compilation.hooks.additionalTreeRuntimeRequirements.tap('PlitziPlugin', chunk => {
-          if (isPlugin) {
-            compilation.addRuntimeModule(chunk, new PlitziPluginRuntime(options.remotes));
-          }
-
           if (isHost) {
             compilation.addRuntimeModule(chunk, new PlitziHostPluginRuntime());
           }
 
-          if (isStorybook && hostName) {
-            compilation.addRuntimeModule(chunk, new PlitziStorybookPluginRuntime(hostName));
+          if (isStorybook) {
+            compilation.addRuntimeModule(chunk, new PlitziStorybookPluginRuntime());
           }
         });
       });
     }
 
-    // EnableLibraryPlugin.setEnabled(compiler, 'plitzi');
-    // compiler.hooks.thisCompilation.tap('PlitziPlugin', (compilation, { normalModuleFactory }) => {
-    //   new PlitziLibraryPlugin().apply(compiler);
-    // });
-    new PlitziLibraryPlugin().apply(compiler);
+    if (isPlugin) {
+      // @todo: support storybook without PlitziStorybookPluginRuntime
+      new PlitziLibraryPlugin({ mode: 'plugin', type: libraryTarget }).apply(compiler);
+    }
   }
 }
 

@@ -4,9 +4,8 @@ const webpack = require('webpack');
 const { RuntimeModule, Template, RuntimeGlobals } = webpack;
 
 class PlitziStorybookPluginRuntime extends RuntimeModule {
-  constructor(hostName) {
+  constructor() {
     super('plitzi-storybook-plugin-runtime', RuntimeModule.STAGE_ATTACH);
-    this._hostName = hostName;
   }
 
   /**
@@ -18,7 +17,7 @@ class PlitziStorybookPluginRuntime extends RuntimeModule {
 
     return Template.asString([
       `if (${RuntimeGlobals.moduleFactories}) {
-        const moduleKey = 'webpack/container/remote/${this._hostName}/usePlitziServiceContext';
+        const moduleKey = 'webpack/container/remote/plitziSdkFederation/usePlitziServiceContext';
         ${RuntimeGlobals.moduleFactories}[moduleKey] = ${runtimeTemplate.basicFunction('module', [
         `const moduleAux = { exports: {} }
         ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
