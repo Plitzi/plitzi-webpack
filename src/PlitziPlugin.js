@@ -18,7 +18,10 @@ class PlitziPlugin {
       isHost: false,
       isStorybook: false,
       libraryTarget: 'plitzi',
-      shared: {},
+      shared: {
+        react: { singleton: true, requiredVersion: false, eager: true },
+        'react-dom': { singleton: true, requiredVersion: false, eager: true }
+      },
       exposes: [],
       shareScope: undefined,
       ...options
@@ -87,7 +90,6 @@ class PlitziPlugin {
           const chunkGraph = compilation.chunkGraph;
           const [, /* usedIds */ modules] = getUsedModuleIdsAndModules(compilation);
           modules.forEach(module => {
-            // console.log(module.identifier(), module.request);
             const identifier = module.identifier();
             if (identifier && identifier.includes(hostName)) {
               chunkGraph.setModuleId(module, module.libIdent());
@@ -112,7 +114,6 @@ class PlitziPlugin {
     }
 
     if (isPlugin) {
-      // @todo: support storybook without PlitziStorybookPluginRuntime
       new PlitziLibraryPlugin({ mode: 'plugin', type: libraryTarget }).apply(compiler);
     }
   }
