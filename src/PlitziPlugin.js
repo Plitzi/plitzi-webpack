@@ -12,7 +12,7 @@ const PlitziLibraryPlugin = require('./PlitziLibraryPlugin');
 const slashCode = '/'.charCodeAt(0);
 
 class PlitziPlugin {
-  constructor(options) {
+  constructor(options = {}) {
     this._options = {
       isPlugin: false,
       isHost: false,
@@ -20,8 +20,8 @@ class PlitziPlugin {
       libraryTarget: 'plitzi',
       hostName: 'plitziSdkFederation',
       shared: {
-        react: { singleton: true, requiredVersion: false, eager: true },
-        'react-dom': { singleton: true, requiredVersion: false, eager: true }
+        react: { singleton: true, requiredVersion: false, eager: !options?.isPlugin ?? true },
+        'react-dom': { singleton: true, requiredVersion: false, eager: !options?.isPlugin ?? true }
       },
       exposes: [],
       shareScope: undefined,
@@ -71,7 +71,7 @@ class PlitziPlugin {
       }
     });
 
-    if (isPlugin && hostName) {
+    if ((isPlugin || isStorybook) && hostName) {
       compiler.hooks.compilation.tap('PlitziPlugin', (compilation, { normalModuleFactory }) => {
         normalModuleFactory.hooks.factorize.tap('ContainerReferencePlugin', data => {
           const { request } = data;
