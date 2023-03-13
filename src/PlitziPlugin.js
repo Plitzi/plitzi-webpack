@@ -18,6 +18,7 @@ class PlitziPlugin {
       isHost: false,
       isStorybook: false,
       libraryTarget: 'plitzi',
+      hostName: 'plitziSdkFederation',
       shared: {
         react: { singleton: true, requiredVersion: false, eager: true },
         'react-dom': { singleton: true, requiredVersion: false, eager: true }
@@ -70,7 +71,7 @@ class PlitziPlugin {
       }
     });
 
-    if (hostName) {
+    if (isPlugin && hostName) {
       compiler.hooks.compilation.tap('PlitziPlugin', (compilation, { normalModuleFactory }) => {
         normalModuleFactory.hooks.factorize.tap('ContainerReferencePlugin', data => {
           const { request } = data;
