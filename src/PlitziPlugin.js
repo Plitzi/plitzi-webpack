@@ -1,6 +1,5 @@
 // Packages
 const webpack = require('webpack');
-const fs = require('fs');
 
 // Relatives
 const PlitziHostPluginModule = require('./PlitziHostPluginModule');
@@ -24,7 +23,6 @@ class PlitziPlugin {
         react: { singleton: true, requiredVersion: false, eager: !options?.isPlugin ?? true },
         'react-dom': { singleton: true, requiredVersion: false, eager: !options?.isPlugin ?? true }
       },
-      exposes: [],
       shareScope: undefined,
       ...options
     };
@@ -37,31 +35,10 @@ class PlitziPlugin {
    */
   apply(compiler) {
     const { _options: options } = this;
-    const { hostName, isPlugin, isHost, isStorybook, shared, shareScope, exposes, libraryTarget } = options;
+    const { hostName, isPlugin, isHost, isStorybook, shared, shareScope, libraryTarget } = options;
     compiler.hooks.afterPlugins.tap('PlitziPlugin', () => {
       if (shared && Object.keys(shared).length > 0) {
         new webpack.sharing.SharePlugin({ shared, shareScope }).apply(compiler);
-      }
-
-      if (exposes && exposes.length > 0) {
-        const exposeShared = {};
-        exposes
-          .filter(
-            exposeKey =>
-              fs.existsSync(`${compiler.context}${exposeKey.replace('./', '/')}.js`) ||
-              fs.existsSync(`${compiler.context}${exposeKey.replace('./', '/')}.ts`)
-          )
-          .forEach(exposeKey => {
-            const shareKey = exposeKey.split('/').reverse().shift();
-            exposeShared[exposeKey] = {
-              import: exposeKey,
-              singleton: true,
-              requiredVersion: false,
-              eager: true,
-              shareKey: `plitziSdkFederation/${shareKey}`
-            };
-          });
-        new webpack.sharing.SharePlugin({ shared: exposeShared, shareScope }).apply(compiler);
       }
 
       if (isStorybook) {
