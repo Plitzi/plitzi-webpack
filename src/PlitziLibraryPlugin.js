@@ -41,11 +41,13 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
   }
 
   apply(compiler) {
-    // Enable Custom library
-    EnableLibraryPlugin.setEnabled(compiler, 'plitzi');
+    if (this.type === 'plitzi') {
+      // Enable Custom library
+      EnableLibraryPlugin.setEnabled(compiler, 'plitzi');
 
-    // Enable Exports
-    new ExportPropertyLibraryPlugin({ type: this.type, nsObjectUsed: this.type !== 'plitzi' }).apply(compiler);
+      // Enable Exports
+      new ExportPropertyLibraryPlugin({ type: this.type, nsObjectUsed: this.type !== 'plitzi' }).apply(compiler);
+    }
 
     // Continue with parent apply process
     super.apply(compiler);
@@ -62,11 +64,11 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
           if (typeof window !== 'undefined') {
             windowInstance = window;
           }
-          return (init, shared, { window  = windowInstance, document = windowInstance.document, Navigator = windowInstance.Navigator, navigator = windowInstance.navigator } = {}) => new Promise((resolve, reject) => {\n`,
+          return (__init__, __shared__, __plitziModules__ = undefined, { window  = windowInstance, document = windowInstance.document, Navigator = windowInstance.Navigator, navigator = windowInstance.navigator } = {}) => new Promise((resolve, reject) => {\n`,
         source,
         `\n});
         })();
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && typeof ${names.root || names.commonjs} !== 'undefined') {
           if (!window.plitziPlugins) {
             window.plitziPlugins = {}
           }
@@ -88,15 +90,23 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
   pluginStartupTemplate() {
     return `try {
-      if (init) {
-        var modules = init();
+      if (__init__) {
+        var modules = __init__();
         Object.keys(modules).forEach(moduleKey => {
           ${RuntimeGlobals.moduleFactories}[moduleKey] = modules[moduleKey];
         });
       }
 
-      if (shared) {
-        var sharedModules = shared();
+      if (__plitziModules__) {
+        ${RuntimeGlobals.moduleFactories}['@plitzi/plitzi-sdk'] = (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+          Object.keys(__plitziModules__).forEach(moduleKey => {
+            __webpack_exports__[moduleKey] = __plitziModules__[moduleKey];
+          });
+        });
+      }
+
+      if (__shared__) {
+        var sharedModules = __shared__();
         Object.keys(sharedModules).forEach(scopeKey => {
           var scopeSection = ${RuntimeGlobals.shareScopeMap}[scopeKey] || {};
           if (!${RuntimeGlobals.shareScopeMap}[scopeKey]) ${RuntimeGlobals.shareScopeMap}[scopeKey] = scopeSection;

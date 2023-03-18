@@ -8,6 +8,7 @@ const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
 const { getUsedModuleIdsAndModules } = require('./helpers/utils');
 const PlitziLibraryPlugin = require('./PlitziLibraryPlugin');
+const { ExternalsPlugin } = require('webpack');
 
 const slashCode = '/'.charCodeAt(0);
 
@@ -115,6 +116,15 @@ class PlitziPlugin {
     }
 
     if (isPlugin) {
+      new ExternalsPlugin('plitzi', {
+        '@plitzi/plitzi-sdk': {
+          root: 'PlitziSdk',
+          commonjs2: '@plitzi/plitzi-sdk',
+          commonjs: '@plitzi/plitzi-sdk',
+          amd: '@plitzi/plitzi-sdk',
+          umd: '@plitzi/plitzi-sdk'
+        }
+      }).apply(compiler);
       new PlitziLibraryPlugin({ mode: 'plugin', type: libraryTarget }).apply(compiler);
     }
   }
