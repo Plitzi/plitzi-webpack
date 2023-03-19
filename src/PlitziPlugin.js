@@ -16,7 +16,7 @@ class PlitziPlugin {
       isPlugin: false,
       isHost: false,
       isStorybook: false,
-      libraryTarget: 'plitzi',
+      libraryTarget: 'umd',
       hostName: 'plitziSdkFederation',
       shared: {
         react: { singleton: true, requiredVersion: false, eager: !options?.isPlugin ?? true },
