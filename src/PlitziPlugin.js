@@ -3,7 +3,6 @@ const webpack = require('webpack');
 
 // Relatives
 const PlitziHostPluginModule = require('./PlitziHostPluginModule');
-const PlitziHostPluginRuntime = require('./PlitziHostPluginRuntime');
 const PlitziStorybookPluginRuntime = require('./PlitziStorybookPluginRuntime');
 const { getUsedModuleIdsAndModules } = require('./helpers/utils');
 const PlitziLibraryPlugin = require('./PlitziLibraryPlugin');
@@ -77,13 +76,9 @@ class PlitziPlugin {
       });
     }
 
-    if (isHost || isStorybook) {
+    if (isStorybook) {
       compiler.hooks.thisCompilation.tap('PlitziPlugin', compilation => {
         compilation.hooks.additionalTreeRuntimeRequirements.tap('PlitziPlugin', chunk => {
-          if (isHost) {
-            compilation.addRuntimeModule(chunk, new PlitziHostPluginRuntime());
-          }
-
           if (isStorybook) {
             compilation.addRuntimeModule(chunk, new PlitziStorybookPluginRuntime());
           }
@@ -93,6 +88,8 @@ class PlitziPlugin {
 
     if (isPlugin) {
       new PlitziLibraryPlugin({ mode: 'plugin', type: libraryTarget }).apply(compiler);
+    } else if (isHost) {
+      new PlitziLibraryPlugin({ mode: 'host', type: libraryTarget }).apply(compiler);
     }
   }
 }
