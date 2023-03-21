@@ -41,7 +41,7 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
   }
 
   apply(compiler) {
-    if (this.mode === 'plugin' || this.mode === 'storybook') {
+    if (this.mode === 'plugin') {
       // Enable Custom library
       EnableLibraryPlugin.setEnabled(compiler, this.type);
 
@@ -231,7 +231,7 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
   render(source, { chunkGraph, runtimeTemplate, chunk, moduleGraph }, { options, compilation }) {
     if (this.type === 'umd') {
-      if (this.mode === 'plugin' || this.mode === 'storybook') {
+      if (this.mode === 'plugin') {
         return this.pluginRenderTemplate(
           source,
           { chunkGraph, runtimeTemplate, chunk, moduleGraph },
@@ -281,18 +281,6 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     }`;
   }
 
-  storybookStartupTemplate() {
-    return `if (${RuntimeGlobals.moduleFactories}) {
-      ${RuntimeGlobals.moduleFactories}['webpack/container/remote/plitziSdkFederation/usePlitziServiceContext'] = module => {
-        const moduleAux = { exports: {} }
-        ${RuntimeGlobals.moduleFactories}['webpack/sharing/consume/default/@plitzi/plitzi-sdk/@plitzi/plitzi-sdk'](moduleAux);
-        const hostModule = module.id.replace('webpack/container/remote/plitziSdkFederation/', '');
-        if (!moduleAux.exports[hostModule]) return;
-        module.exports = moduleAux.exports[hostModule];
-      }
-    }`;
-  }
-
   hostStartupTemplate(sharedModules) {
     return `if (eval('typeof ${RuntimeGlobals.require} !== "undefined"') && eval('${
       RuntimeGlobals.shareScopeMap
@@ -323,14 +311,6 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
       if (this.mode === 'plugin') {
         const plitziModuleId = this.getPlitziModuleId(chunkGraph, chunk);
         result = new ConcatSource(this.pluginStartupTemplate(plitziModuleId), source);
-      } else if (this.mode === 'storybook') {
-        result = new ConcatSource(this.storybookStartupTemplate(), source);
-      } else if (this.mode === 'host') {
-        const sharedModules = this.getSharedModules(chunkGraph, chunk);
-        result = new ConcatSource(this.hostStartupTemplate(sharedModules), source);
-      }
-
-      if (this.mode === 'plugin' || this.mode === 'storybook') {
         const exportsInfo = moduleGraph.getExportsInfo(module);
         for (const exportInfo of exportsInfo.orderedExports) {
           if (!exportInfo.provided) {
@@ -343,6 +323,9 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
             ])};\n`
           );
         }
+      } else if (this.mode === 'host') {
+        const sharedModules = this.getSharedModules(chunkGraph, chunk);
+        result = new ConcatSource(this.hostStartupTemplate(sharedModules), source);
       }
 
       return result;
