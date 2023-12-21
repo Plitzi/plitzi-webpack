@@ -33,11 +33,6 @@ jobs:
           path: '**/node_modules'
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/yarn.lock') }}
 
-      - name: Login Registry
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${{secrets.NPM_AUTH_TOKEN_TRANSFORMD}}" > .npmrc
-          echo "@transformd-ltd:registry=https://npm.pkg.github.com/" >> .npmrc
-
       - name: Yarn Install
         if: steps.cache-packages.outputs.cache-hit != 'true'
         run: yarn install
