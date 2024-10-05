@@ -165,7 +165,12 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
     const externalsArguments = modules =>
       modules
-        .map(m => `__WEBPACK_EXTERNAL_MODULE_${Template.toIdentifier(`${chunkGraph.getModuleId(m)}`)}__`)
+        .map(module => {
+          const moduleName = module.request.replace(/[^a-zA-Z0-9]+/gim, '_');
+          const identifier = Template.toIdentifier(`${chunkGraph.getModuleId(module)}`);
+
+          return `__WEBPACK_EXTERNAL_MODULE_${moduleName}__ : __WEBPACK_EXTERNAL_MODULE_${identifier}__`;
+        })
         .join(', ');
 
     const plitziModuleId = this.getPlitziModuleId(chunkGraph, chunk);
