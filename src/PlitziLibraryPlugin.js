@@ -2,6 +2,7 @@
 
 const webpack = require('webpack');
 const ExportPropertyLibraryPlugin = require('webpack/lib/library/ExportPropertyLibraryPlugin');
+const propertyAccess = require('webpack/lib/util/propertyAccess');
 
 const {
   Template,
@@ -238,6 +239,20 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
   // Startup Render
 
+  pluginStartupTemplate(plitziModuleId) {
+    return `try {
+      if (__plitziModules__) {
+        ${RuntimeGlobals.moduleFactories}['${plitziModuleId}'] = (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+          Object.keys(__plitziModules__).forEach(moduleKey => {
+            __webpack_exports__[moduleKey] = __plitziModules__[moduleKey];
+          });
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }`;
+  }
+
   hostStartupTemplate(sharedModules) {
     return `if (eval('typeof ${RuntimeGlobals.require} !== "undefined"') && eval('${
       RuntimeGlobals.shareScopeMap
@@ -262,11 +277,24 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     }`;
   }
 
-  renderStartup(source, module, { chunkGraph, chunk }) {
+  renderStartup(source, module, { chunkGraph, moduleGraph, chunk }) {
     if (this.type === 'umd') {
       let result = source;
       if (this.mode === 'plugin') {
-        // Nothing to do here
+        const plitziModuleId = this.getPlitziModuleId(chunkGraph, chunk);
+        result = new ConcatSource(this.pluginStartupTemplate(plitziModuleId), source);
+        const exportsInfo = moduleGraph.getExportsInfo(module);
+        for (const exportInfo of exportsInfo.orderedExports) {
+          if (!exportInfo.provided) {
+            continue;
+          }
+
+          result.add(
+            `__webpack_exports__['${Template.toIdentifier(exportInfo.name)}'] = __webpack_exports__${propertyAccess([
+              exportInfo.getUsedName(exportInfo.name, chunk.runtime)
+            ])};\n`
+          );
+        }
       } else if (this.mode === 'host') {
         const sharedModules = this.getSharedModules(chunkGraph, chunk);
         result = new ConcatSource(this.hostStartupTemplate(sharedModules), source);
