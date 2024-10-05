@@ -1,13 +1,15 @@
 'use strict';
 
 const webpack = require('webpack');
+const ExportPropertyLibraryPlugin = require('webpack/lib/library/ExportPropertyLibraryPlugin');
 
 const {
   Template,
   ExternalModule,
   RuntimeGlobals,
   sources: { ConcatSource },
-  library: { AbstractLibraryPlugin }
+  library: { AbstractLibraryPlugin, EnableLibraryPlugin },
+  javascript: { JavascriptModulesPlugin }
 } = webpack;
 
 const accessorToObjectAccess = accessor => accessor.map(a => `[${JSON.stringify(a)}]`).join('');
@@ -37,6 +39,47 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     return { name, names, auxiliaryComment: library.auxiliaryComment, namedDefine: library.umdNamedDefine };
   }
 
+  apply(compiler) {
+    if (this.mode === 'plugin') {
+      // Enable Custom library
+      EnableLibraryPlugin.setEnabled(compiler, this.type);
+
+      // Enable Exports
+      new ExportPropertyLibraryPlugin({ type: this.type, nsObjectUsed: false }).apply(compiler);
+
+      // Continue with parent apply process
+      super.apply(compiler);
+    } else if (this.mode === 'host') {
+      const { _pluginName } = this;
+      compiler.hooks.thisCompilation.tap(_pluginName, compilation => {
+        const getOptionsForChunk = chunk => {
+          if (compilation.chunkGraph.getNumberOfEntryModules(chunk) === 0) {
+            return false;
+          }
+
+          const options = chunk.getEntryOptions();
+          const library = options && options.library;
+
+          return this._parseOptionsCached(library !== undefined ? library : compilation.outputOptions.library);
+        };
+
+        const hooks = JavascriptModulesPlugin.getCompilationHooks(compilation);
+        hooks.renderStartup.tap(_pluginName, (source, module, renderContext) => {
+          const options = getOptionsForChunk(renderContext.chunk);
+          if (options === false) {
+            return source;
+          }
+
+          return this.renderStartup(source, module, renderContext, {
+            options,
+            compilation,
+            chunkGraph: compilation.chunkGraph
+          });
+        });
+      });
+    }
+  }
+
   getPlitziModuleId = (chunkGraph, chunk) => {
     const plitziModule = chunkGraph.getChunkModules(chunk).find(module => module.rawRequest === '@plitzi/plitzi-sdk');
     if (!plitziModule) {
@@ -45,6 +88,27 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
 
     return chunkGraph.getModuleId(plitziModule);
   };
+
+  getSharedModules = (chunkGraph, chunk) => {
+    const modules = chunkGraph.getChunkModulesIterableBySourceType(chunk, 'consume-shared');
+    const modulesParsed = [];
+    for (const module of modules) {
+      const toModule = chunkGraph.getChunkModules(chunk).find(m => m.rawRequest === module.options.import);
+      const moduleParsed = {
+        id: chunkGraph.getModuleId(module),
+        rawRequest: module.options.import,
+        to: toModule ? chunkGraph.getModuleId(toModule) : undefined
+      };
+
+      if (moduleParsed.id && moduleParsed.to) {
+        modulesParsed.push(moduleParsed);
+      }
+    }
+
+    return modulesParsed;
+  };
+
+  // Render
 
   pluginRenderTemplate(source, { chunkGraph, runtimeTemplate, chunk, moduleGraph }, { options, compilation }) {
     const { names } = options;
@@ -162,6 +226,48 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
         { chunkGraph, runtimeTemplate, chunk, moduleGraph },
         { options, compilation }
       );
+    }
+
+    return source;
+  }
+
+  // Startup Render
+
+  hostStartupTemplate(sharedModules) {
+    return `if (eval('typeof ${RuntimeGlobals.require} !== "undefined"') && eval('${
+      RuntimeGlobals.shareScopeMap
+    }') && Object.keys(eval('${RuntimeGlobals.shareScopeMap}')).length > 0) {
+      // When is imported by another package and contain shared libraries
+      ${RuntimeGlobals.shareScopeMap} = eval('${RuntimeGlobals.shareScopeMap}');
+    } else if (typeof require === 'function') {
+      // Scenarios like Jest
+      ${sharedModules.reduce(
+        (acum, sharedModule) => `${acum}${acum ? '\n' : ''}${RuntimeGlobals.moduleFactories}['${
+          sharedModule.id
+        }'] = (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+          const mod = require('${sharedModule.rawRequest}');
+          if (mod) {
+            Object.keys(mod).forEach(moduleKey => {
+              __webpack_exports__[moduleKey] = mod[moduleKey];
+            });
+          }
+        });`,
+        ''
+      )}
+    }`;
+  }
+
+  renderStartup(source, module, { chunkGraph, chunk }) {
+    if (this.type === 'umd') {
+      let result = source;
+      if (this.mode === 'plugin') {
+        // Nothing to do here
+      } else if (this.mode === 'host') {
+        const sharedModules = this.getSharedModules(chunkGraph, chunk);
+        result = new ConcatSource(this.hostStartupTemplate(sharedModules), source);
+      }
+
+      return result;
     }
 
     return source;
