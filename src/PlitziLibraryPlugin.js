@@ -93,7 +93,7 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
   getSharedModules = (chunkGraph, chunk) => {
     const modulesParsed = [];
     const modules = chunkGraph.getChunkModulesIterableBySourceType(chunk, 'consume-shared');
-    if (!modules || !Array.isArray(modules)) {
+    if (!modules) {
       return modulesParsed;
     }
 
