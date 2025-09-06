@@ -20,7 +20,7 @@ class PlitziLibraryPlugin extends AbstractLibraryPlugin {
     const { mode = 'plugin', type = 'umd' } = options;
     super({ pluginName: 'PlitziLibraryPlugin', type, library: { name: 'Plitzi' } });
     this.mode = mode;
-    this.type = type;
+    this.type   = type;
   }
 
   // Others
